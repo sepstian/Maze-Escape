@@ -759,6 +759,23 @@
       fitCanvas();
       draw();
       qs("#status").textContent = "Ready";
+
+      function enableAudioOnce() {
+        resultSound
+          .play()
+          .then(() => {
+            resultSound.pause();
+            resultSound.currentTime = 0;
+            console.log("✅ Audio enabled for iPhone Safari.");
+            window.removeEventListener("touchstart", enableAudioOnce);
+            window.removeEventListener("click", enableAudioOnce);
+          })
+          .catch((err) => {
+            console.log("Audio enable failed:", err);
+          });
+      }
+      window.addEventListener("touchstart", enableAudioOnce);
+      window.addEventListener("click", enableAudioOnce);
     </script>
   </body>
 </html>
