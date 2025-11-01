@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Maze Escape Game</title>
+    <style>
+      :root {
+        --bg: #0f1724;
+        --card: #0b1220;
+        --accent1: #6ee7b7;
+        --accent2: #60a5fa;
+        --muted: #94a3b8;
+        --glass: rgba(255, 255, 255, 0.04);
+        --radius: 16px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: linear-gradient(180deg, #071026 0%, #0f1724 100%);
+        color: #e6eef8;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 28px;
+        padding: 48px;
+        align-items: start;
+      }
+
+      .panel {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(255, 255, 255, 0.01)
+        );
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: 0 6px 30px rgba(2, 6, 23, 0.6);
+      }
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .logo {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent1), var(--accent2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #04263b;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      p.lead {
+        color: var(--muted);
+        margin-top: 6px;
+        font-size: 13px;
+      }
+
+      .controls {
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      input[type="range"] {
+        width: 100%;
+      }
+      select,
+      input[type="number"] {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px;
+        border-radius: 10px;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 0;
+        background: linear-gradient(90deg, var(--accent2), var(--accent1));
+        color: #04263b;
+        font-weight: 600;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+      }
+
+      .meta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 18px;
+        flex-wrap: wrap;
+      }
+      .stat {
+        background: var(--glass);
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .hint {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .stage {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .board-wrap {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.01),
+          rgba(255, 255, 255, 0.02)
+        );
+        border-radius: 14px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 520px;
+      }
+      canvas#maze {
+        background: linear-gradient(180deg, #05101a 0%, #072235 100%);
+        border-radius: 10px;
+      }
+
+      .hud {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .hud .info {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .time {
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .goal {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 60;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+      }
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.03),
+          rgba(255, 255, 255, 0.02)
+        );
+        padding: 28px;
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(2, 6, 23, 0.7);
+        text-align: center;
+        color: #eafaf0;
+        max-width: 90%;
+      }
+      .card h2 {
+        margin: 0 0 8px 0;
+      }
+      .card p {
+        margin: 6px 0;
+      }
+      .result-img {
+        width: 220px;
+        height: 220px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 12px;
+      }
+
+      .confetti-canvas {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      /* mobile WASD controls - placed below maze, not overlapping */
+      .mobile-controls {
+        display: none;
+        margin: 18px auto 36px;
+        z-index: 70;
+        gap: 10px;
+      }
+      .dpad {
+        width: 220px;
+        height: auto;
+        display: grid;
+        grid-template-columns: 60px 60px 60px;
+        grid-template-rows: 60px 60px;
+        gap: 8px;
+        background: rgba(3, 7, 18, 0.45);
+        backdrop-filter: blur(6px);
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .btn-d {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .btn-d:active {
+        transform: scale(0.98);
+      }
+
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+          padding: 24px;
+        }
+        .board-wrap {
+          min-height: 420px;
+        }
+        .mobile-controls {
+          display: flex;
+        }
+      }
+      @media (max-width: 600px) {
+        h1 {
+          font-size: 18px;
+        }
+        button {
+          width: 100%;
+        }
+        .board-wrap {
+          padding: 10px;
+        }
+        .app {
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- user-provided sound file will be used for both win & lose -->
+    <audio
+      id="resultSound"
+      src="Hidup Jokowi - Sound Effect.mp3"
+      preload="auto"
+    ></audio>
+
+    <div class="app">
+      <div class="panel">
+        <div class="brand">
+          <div class="logo">ME</div>
+          <div>
+            <h1>Maze Escape</h1>
+            <p class="lead">
+              Capai exit sebelum waktu habis! Gunakan panah / WASD.
+            </p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div>
+            <label>Ukuran grid: <span id="sizeLabel">21 × 21</span></label>
+            <input
+              id="sizeRange"
+              type="range"
+              min="9"
+              max="51"
+              step="2"
+              value="21"
+            />
+          </div>
+          <div class="row">
+            <button id="newBtn">Buat Labirin Baru</button>
+            <button id="resetBtn" class="btn-ghost">Reset</button>
+          </div>
+          <div class="row">
+            <div style="flex: 1">
+              <label>Batas waktu (detik):</label
+              ><input
+                id="timeLimit"
+                type="number"
+                min="10"
+                max="300"
+                value="60"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="stat">Langkah: <span id="steps">0</span></div>
+          <div class="stat">Sisa Waktu: <span id="timer">60</span>s</div>
+        </div>
+
+        <p class="hint">
+          Target: sudut kanan bawah. Selesaikan sebelum waktu habis!
+        </p>
+      </div>
+
+      <div class="stage">
+        <div class="hud">
+          <div class="info">
+            <div class="time">Sisa Waktu: <span id="liveTime">60</span>s</div>
+            <div class="goal">Exit → kanan bawah</div>
+          </div>
+          <div class="info">
+            <div id="status" style="color: var(--muted)">Ready</div>
+          </div>
+        </div>
+
+        <div class="board-wrap"><canvas id="maze"></canvas></div>
+
+        <!-- MOBILE CONTROLS (WASD) placed below the maze so it won't overlap -->
+        <div class="mobile-controls" id="mobileControls" aria-hidden="true">
+          <div class="dpad">
+            <div></div>
+            <div class="btn-d" id="m-up">▲</div>
+            <div></div>
+            <div class="btn-d" id="m-left">◀</div>
+            <div class="btn-d" id="m-down">▼</div>
+            <div class="btn-d" id="m-right">▶</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIN Overlay -->
+    <div class="overlay" id="winOverlay">
+      <canvas class="confetti-canvas" id="confetti"></canvas>
+      <div class="card">
+        <img src="joko-widodo-is-my-spirit.jpg" alt="win" class="result-img" />
+        <h2>Selamat! 🎉</h2>
+        <p id="finalTime">Waktu tersisa: 0s</p>
+        <p>Tekan tombol Tutup untuk bermain lagi.</p>
+        <div style="margin-top: 14px"><button id="closeWin">Tutup</button></div>
+      </div>
+    </div>
+
+    <!-- LOSE Overlay -->
+    <div class="overlay" id="loseOverlay">
+      <div class="card">
+        <img src="joko-widodo-is-my-spirit.jpg" alt="lose" class="result-img" />
+        <h2>Waktu Habis 😢</h2>
+        <p>Coba lagi dengan labirin baru.</p>
+        <div style="margin-top: 14px">
+          <button id="closeLose">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const qs = (s) => document.querySelector(s);
+      const mazeCanvas = qs("#maze");
+      const ctx = mazeCanvas.getContext("2d");
+      const confettiCanvas = qs("#confetti");
+      const confCtx = confettiCanvas ? confettiCanvas.getContext("2d") : null;
+      const resultSound = qs("#resultSound");
+
+      // Maze state
+      let cols = 21,
+        rows = 21,
+        cellSize = 30;
+      let grid = [],
+        player = { r: 0, c: 0 },
+        goal = { r: rows - 1, c: cols - 1 };
+      let steps = 0;
+      const stepsEl = qs("#steps");
+
+      // Timer
+      let timeLeft = parseInt(qs("#timeLimit").value) || 60;
+      let timerInterval = null;
+      let gameStarted = false;
+      let gameWon = false;
+      const timerEl = qs("#timer");
+      const liveTime = qs("#liveTime");
+
+      // confetti
+      let confettiParticles = [];
+      let confettiRAF = null;
+
+      function fitCanvas() {
+        const wrap = document.querySelector(".board-wrap");
+        const size = Math.min(wrap.clientWidth - 40, window.innerHeight - 220);
+        mazeCanvas.width = size;
+        mazeCanvas.height = size;
+        draw();
+      }
+      window.addEventListener("resize", fitCanvas);
+
+      function idx(r, c) {
+        return r * cols + c;
+      }
+      function makeGrid() {
+        grid = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            grid.push({
+              r,
+              c,
+              visited: false,
+              walls: [true, true, true, true],
+            });
+          }
+        }
+      }
+      function neighbors(cell) {
+        const { r, c } = cell;
+        const list = [];
+        if (r > 0) list.push({ dir: 0, cell: grid[idx(r - 1, c)] });
+        if (c < cols - 1) list.push({ dir: 1, cell: grid[idx(r, c + 1)] });
+        if (r < rows - 1) list.push({ dir: 2, cell: grid[idx(r + 1, c)] });
+        if (c > 0) list.push({ dir: 3, cell: grid[idx(r, c - 1)] });
+        return list.filter((n) => !n.cell.visited);
+      }
+      function removeWall(a, b, dir) {
+        a.walls[dir] = false;
+        b.walls[(dir + 2) % 4] = false;
+      }
+      function generate(startR = 0, startC = 0) {
+        makeGrid();
+        const start = grid[idx(startR, startC)];
+        start.visited = true;
+        const stack = [start];
+        while (stack.length) {
+          const current = stack[stack.length - 1];
+          const n = neighbors(current);
+          if (n.length) {
+            const pick = n[Math.floor(Math.random() * n.length)];
+            removeWall(current, pick.cell, pick.dir);
+            pick.cell.visited = true;
+            stack.push(pick.cell);
+          } else stack.pop();
+        }
+      }
+
+      function draw() {
+        const w = mazeCanvas.width;
+        const h = mazeCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+        cellSize = Math.floor(w / cols);
+        const pad = (w - cellSize * cols) / 2;
+        ctx.save();
+        ctx.translate(pad, pad);
+        // background
+        ctx.fillStyle = "#041425";
+        ctx.fillRect(0, 0, cellSize * cols, cellSize * rows);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 2;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const cell = grid[idx(r, c)];
+            const x = c * cellSize,
+              y = r * cellSize;
+            ctx.beginPath();
+            if (cell.walls[0]) {
+              ctx.moveTo(x, y);
+              ctx.lineTo(x + cellSize, y);
+            }
+            if (cell.walls[1]) {
+              ctx.moveTo(x + cellSize, y);
+              ctx.lineTo(x + cellSize, y + cellSize);
+            }
+            if (cell.walls[2]) {
+              ctx.moveTo(x + cellSize, y + cellSize);
+              ctx.lineTo(x, y + cellSize);
+            }
+            if (cell.walls[3]) {
+              ctx.moveTo(x, y + cellSize);
+              ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+        }
+        // goal
+        ctx.fillStyle = "#6ee7b7";
+        ctx.fillRect(
+          goal.c * cellSize + cellSize * 0.12,
+          goal.r * cellSize + cellSize * 0.12,
+          cellSize * 0.76,
+          cellSize * 0.76
+        );
+        // player
+        const px = player.c * cellSize + cellSize / 2,
+          py = player.r * cellSize + cellSize / 2;
+        ctx.beginPath();
+        ctx.fillStyle = "#60a5fa";
+        ctx.arc(px, py, cellSize * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function canMove(r, c, dir) {
+        return !grid[idx(r, c)].walls[dir];
+      }
+      function move(dir) {
+        if (gameWon) return;
+        const { r, c } = player;
+        if (dir === 0 && r > 0 && canMove(r, c, 0)) player.r--;
+        else if (dir === 1 && c < cols - 1 && canMove(r, c, 1)) player.c++;
+        else if (dir === 2 && r < rows - 1 && canMove(r, c, 2)) player.r++;
+        else if (dir === 3 && c > 0 && canMove(r, c, 3)) player.c--;
+        else return;
+        steps++;
+        stepsEl.textContent = steps;
+        draw();
+        if (!gameStarted) {
+          startCountdown();
+          qs("#status").textContent = "Playing";
+        }
+        checkWin();
+      }
+
+      // keyboard & mobile buttons
+      window.addEventListener("keydown", (e) => {
+        if (document.activeElement.tagName === "INPUT") return;
+        const key = e.key;
+        if (["ArrowUp", "w", "W"].includes(key)) move(0);
+        if (["ArrowRight", "d", "D"].includes(key)) move(1);
+        if (["ArrowDown", "s", "S"].includes(key)) move(2);
+        if (["ArrowLeft", "a", "A"].includes(key)) move(3);
+      });
+      // mobile control listeners
+      ["m-up", "m-down", "m-left", "m-right"].forEach((id) => {
+        const el = qs("#" + id);
+        if (el)
+          el.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (id === "m-up") move(0);
+            if (id === "m-right") move(1);
+            if (id === "m-down") move(2);
+            if (id === "m-left") move(3);
+          });
+        el &&
+          el.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            if (id === "m-up") move(0);
+            if (id === "m-right") move(1);
+            if (id === "m-down") move(2);
+            if (id === "m-left") move(3);
+          });
+      });
+
+      // Timer functions
+      function startCountdown() {
+        if (timerInterval) return;
+        timeLeft = parseInt(qs("#timeLimit").value) || 60;
+        qs("#timer").textContent = timeLeft;
+        qs("#liveTime").textContent = timeLeft;
+        gameStarted = true;
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          qs("#timer").textContent = timeLeft;
+          qs("#liveTime").textContent = timeLeft;
+          if (timeLeft <= 0) {
+            stopCountdown();
+            gameOver();
+          }
+        }, 1000);
+      }
+      function stopCountdown() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      function checkWin() {
+        if (player.r === goal.r && player.c === goal.c) {
+          gameWon = true;
+          stopCountdown();
+          playResultSound();
+          showWin();
+        }
+      }
+
+      function showWin() {
+        qs("#finalTime").textContent = "Waktu tersisa: " + timeLeft + "s";
+        qs("#winOverlay").style.display = "flex";
+        startConfetti();
+      }
+      function gameOver() {
+        if (!gameWon) {
+          playResultSound();
+          qs("#loseOverlay").style.display = "flex";
+          qs("#status").textContent = "Waktu Habis";
+        }
+      }
+
+      function playResultSound() {
+        try {
+          resultSound.currentTime = 0;
+          resultSound.play().catch(() => {});
+        } catch (e) {}
+      }
+
+      // when close clicked -> hide overlay and reset game automatically
+      qs("#closeWin").onclick = () => {
+        resetGame(false);
+      };
+      qs("#closeLose").onclick = () => {
+        resetGame(false);
+      };
+
+      // confetti
+      function startConfetti() {
+        confettiParticles = [];
+        for (let i = 0; i < 160; i++) {
+          confettiParticles.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * -window.innerHeight,
+            vx: (Math.random() - 0.5) * 4,
+            vy: 2 + Math.random() * 4,
+            rot: Math.random() * 360,
+            size: 6 + Math.random() * 10,
+            color: `hsl(${Math.random() * 60 + 160},80%,60%)`,
+          });
+        }
+        if (confettiCanvas) {
+          confettiCanvas.width = window.innerWidth;
+          confettiCanvas.height = window.innerHeight;
+          renderConfetti();
+        }
+      }
+      function renderConfetti() {
+        confCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiParticles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.03;
+          p.rot += p.vx;
+          confCtx.save();
+          confCtx.translate(p.x, p.y);
+          confCtx.rotate((p.rot * Math.PI) / 180);
+          confCtx.fillStyle = p.color;
+          confCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          confCtx.restore();
+        });
+        confettiParticles = confettiParticles.filter(
+          (p) => p.y < confettiCanvas.height + 50
+        );
+        if (confettiParticles.length > 0)
+          confettiRAF = requestAnimationFrame(renderConfetti);
+      }
+      function stopConfetti() {
+        if (confettiRAF) cancelAnimationFrame(confettiRAF);
+        confCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      }
+
+      // controls
+      qs("#sizeRange").addEventListener("input", (e) => {
+        qs("#sizeLabel").textContent = e.target.value + " × " + e.target.value;
+      });
+      qs("#newBtn").addEventListener("click", () => {
+        newMaze();
+      });
+      qs("#resetBtn").addEventListener("click", () => {
+        resetGame(false);
+      });
+
+      function resetGame(startTimerNow = false) {
+        stopConfetti();
+        qs("#winOverlay").style.display = "none";
+        qs("#loseOverlay").style.display = "none";
+        gameWon = false;
+        steps = 0;
+        qs("#steps").textContent = steps;
+        player = { r: 0, c: 0 };
+        goal = { r: rows - 1, c: cols - 1 };
+        draw();
+        stopCountdown();
+        gameStarted = false;
+        qs("#status").textContent = "Ready";
+
+        // 🕒 Reset waktu ke batas waktu input
+        timeLeft = parseInt(qs("#timeLimit").value) || 60;
+        qs("#timer").textContent = timeLeft;
+        qs("#liveTime").textContent = timeLeft;
+
+        if (startTimerNow) {
+          startCountdown();
+          qs("#status").textContent = "Playing";
+        }
+      }
+
+      function newMaze() {
+        cols = rows = parseInt(qs("#sizeRange").value);
+        generate(0, 0);
+        player = { r: 0, c: 0 };
+        goal = { r: rows - 1, c: cols - 1 };
+        steps = 0;
+        qs("#steps").textContent = steps;
+        draw();
+        stopCountdown();
+        gameStarted = false;
+        qs("#status").textContent = "Ready";
+
+        // 🕒 Reset waktu juga ke batas input
+        timeLeft = parseInt(qs("#timeLimit").value) || 60;
+        qs("#timer").textContent = timeLeft;
+        qs("#liveTime").textContent = timeLeft;
+      }
+
+      // initial setup
+      cols = rows = parseInt(qs("#sizeRange").value);
+      generate();
+      player = { r: 0, c: 0 };
+      goal = { r: rows - 1, c: cols - 1 };
+      fitCanvas();
+      draw();
+      qs("#status").textContent = "Ready";
+    </script>
+  </body>
+</html>
